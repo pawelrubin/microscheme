@@ -4,11 +4,13 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f64489045c38dd6bcd6165c000ea833624267ec9c8c3dedab0fea329fa9d625d
+-- hash: b53eccd1c6b73d08acc48492fb903f6fc41d1838d7b76aff1f583c930937a2ba
 
 name:           haschemell
 version:        0.1.0.0
+synopsis:       A little scheme compiler for the LLVM platform written in Haskell.
 description:    Please see the README on GitHub at <https://github.com/pawelrubin/haschemell#readme>
+category:       Compilers/Interpreters
 homepage:       https://github.com/pawelrubin/haschemell#readme
 bug-reports:    https://github.com/pawelrubin/haschemell/issues
 author:         Paweł Rubin
@@ -27,25 +29,37 @@ source-repository head
 
 library
   exposed-modules:
+      HaScheme.Ast
       Lib
   other-modules:
       Paths_haschemell
   hs-source-dirs:
       src
+  default-extensions: OverloadedStrings, LambdaCase
+  ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
+    , pretty-simple
+    , prettyprinter
+    , string-conversions
+    , text
   default-language: Haskell2010
 
-executable haschemell-exe
+executable haschemell
   main-is: Main.hs
   other-modules:
       Paths_haschemell
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  default-extensions: OverloadedStrings, LambdaCase
+  ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
     , haschemell
+    , pretty-simple
+    , prettyprinter
+    , string-conversions
+    , text
   default-language: Haskell2010
 
 test-suite haschemell-test
@@ -55,8 +69,13 @@ test-suite haschemell-test
       Paths_haschemell
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  default-extensions: OverloadedStrings, LambdaCase
+  ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
     , haschemell
+    , pretty-simple
+    , prettyprinter
+    , string-conversions
+    , text
   default-language: Haskell2010
