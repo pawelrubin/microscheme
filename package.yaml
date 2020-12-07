@@ -32,6 +32,7 @@ executable:
   main: Main.hs
   source-dirs: app
   dependencies:
+    - optparse-applicative
     - haschemell
 
 tests:

@@ -21,5 +21,6 @@ instance Pretty SchemeVal where
     List values -> lparen <> hsep (map (\val -> pretty val <> "") values) <> rparen
     Number num -> pretty num
     String str -> pretty str
-    Bool b -> pretty b
+    Bool True -> "#t"
+    Bool False -> "#f"
     Nil -> "()"

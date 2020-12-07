@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b53eccd1c6b73d08acc48492fb903f6fc41d1838d7b76aff1f583c930937a2ba
+-- hash: d8d906b88fff5ebc72329a43b6c9c0a40a25a206739a5ba0ecc2db1282f93eed
 
 name:           haschemell
 version:        0.1.0.0
@@ -29,8 +29,8 @@ source-repository head
 
 library
   exposed-modules:
+      HaScheme
       HaScheme.Ast
-      Lib
   other-modules:
       Paths_haschemell
   hs-source-dirs:
@@ -56,6 +56,7 @@ executable haschemell
   build-depends:
       base >=4.7 && <5
     , haschemell
+    , optparse-applicative
     , pretty-simple
     , prettyprinter
     , string-conversions
