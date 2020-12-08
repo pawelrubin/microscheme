@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d8d906b88fff5ebc72329a43b6c9c0a40a25a206739a5ba0ecc2db1282f93eed
+-- hash: 262fa685ef4acb635059ef49ad5e3216d7cdd49e06281ef4f164b6b2bb94244b
 
 name:           haschemell
 version:        0.1.0.0
@@ -31,14 +31,20 @@ library
   exposed-modules:
       HaScheme
       HaScheme.Ast
+      HaScheme.Parser
   other-modules:
       Paths_haschemell
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings, LambdaCase
+  default-extensions: OverloadedStrings LambdaCase
   ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
+    , directory
+    , llvm-hs >=9 && <10
+    , llvm-hs-pretty >=0.9 && <1
+    , llvm-hs-pure >=9 && <10
+    , parsec
     , pretty-simple
     , prettyprinter
     , string-conversions
@@ -51,12 +57,17 @@ executable haschemell
       Paths_haschemell
   hs-source-dirs:
       app
-  default-extensions: OverloadedStrings, LambdaCase
+  default-extensions: OverloadedStrings LambdaCase
   ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
+    , directory
     , haschemell
+    , llvm-hs >=9 && <10
+    , llvm-hs-pretty >=0.9 && <1
+    , llvm-hs-pure >=9 && <10
     , optparse-applicative
+    , parsec
     , pretty-simple
     , prettyprinter
     , string-conversions
@@ -70,11 +81,16 @@ test-suite haschemell-test
       Paths_haschemell
   hs-source-dirs:
       test
-  default-extensions: OverloadedStrings, LambdaCase
+  default-extensions: OverloadedStrings LambdaCase
   ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
+    , directory
     , haschemell
+    , llvm-hs >=9 && <10
+    , llvm-hs-pretty >=0.9 && <1
+    , llvm-hs-pure >=9 && <10
+    , parsec
     , pretty-simple
     , prettyprinter
     , string-conversions

@@ -1,11 +1,16 @@
 module Main where
 
 import qualified Data.Text.IO as T
+import Data.Text.Prettyprint.Doc
+import Data.Text.Prettyprint.Doc.Render.Text
+import HaScheme
 import Options.Applicative
+import System.Directory
+import Text.Pretty.Simple
 
 data Action
-  = Ast
-  | SAst
+  = Code
+  | Ast
   | LLVM
   | Compile FilePath
   | Run
@@ -24,8 +29,8 @@ main = runOpts =<< execParser (optionsP `withInfo` infoString)
 
 actionP :: Parser Action
 actionP =
-  flag' Ast (long "ast" <> short 'a' <> help "Pretty print the ast")
-    <|> flag' SAst (long "sast" <> short 's' <> help "Pretty print the sast")
+  flag' Code (long "code" <> short 'c' <> help "Pretty print the parsed code")
+    <|> flag' Ast (long "ast" <> short 'a' <> help "Pretty print the ast")
     <|> flag'
       LLVM
       (long "llvm" <> short 'l' <> help "Pretty print the generated llvm")
@@ -48,11 +53,18 @@ runOpts (Options action inputFile) = do
     Nothing -> do
       putStrLn "Running REPL"
     Just path -> do
-      code <- T.readFile path
-      putStrLn "Work in Progress"
-      case action of
-        Ast -> putStrLn "AST"
-        SAst -> putStrLn "SAst"
-        LLVM -> putStrLn "LLVM"
-        Compile path -> putStrLn $ "Compile. output path = " <> show path
-        _ -> error "Invalid usage"
+      exists <- doesFileExist path
+      if exists
+        then do
+          code <- T.readFile path
+          case readExprFile path code of
+            Right ast ->
+              case action of
+                Ast -> pPrint ast
+                Code -> putDoc $ pretty ast <> "\n"
+                LLVM -> putStrLn "LLVM"
+                Compile path -> putStrLn $ "Compile. output path = " <> show path
+                _ -> error "Invalid usage"
+            Left err -> print err
+        else do
+          errorWithoutStackTrace "File does not exist"

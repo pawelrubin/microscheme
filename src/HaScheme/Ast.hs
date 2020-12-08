@@ -20,7 +20,7 @@ instance Pretty SchemeVal where
     Atom name -> pretty name
     List values -> lparen <> hsep (map (\val -> pretty val <> "") values) <> rparen
     Number num -> pretty num
-    String str -> pretty str
+    String str -> "\"" <> pretty str <> "\""
     Bool True -> "#t"
     Bool False -> "#f"
     Nil -> "()"

@@ -12,7 +12,9 @@ extra-source-files:
   - README.md
   - ChangeLog.md
 
-default-extensions: OverloadedStrings, LambdaCase
+default-extensions:
+  - OverloadedStrings
+  - LambdaCase
 ghc-options: -Wall
   -fno-warn-name-shadowing
   -Wcompat
@@ -24,6 +26,11 @@ dependencies:
   - string-conversions
   - prettyprinter
   - pretty-simple
+  - parsec
+  - directory
+  - llvm-hs-pure >= 9 && < 10
+  - llvm-hs >= 9 && < 10
+  - llvm-hs-pretty >= 0.9 && < 1
 
 library:
   source-dirs: src
