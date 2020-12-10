@@ -1,7 +1,9 @@
 module HaScheme.Ast where
 
+import Data.IORef (IORef)
 import qualified Data.Text as T
 import Data.Text.Prettyprint.Doc
+import Text.ParserCombinators.Parsec
 
 data SchemeVal
   = Atom T.Text
@@ -11,11 +13,32 @@ data SchemeVal
   | String T.Text
   | Bool Bool
   | PrimitiveFunc ([SchemeVal] -> ThrowsError SchemeVal)
+  | Func
+      { params :: [T.Text],
+        vararg :: Maybe T.Text,
+        body :: [SchemeVal],
+        closure :: Env
+      }
   | Nil
 
+--------------------------------------------
+-- Environment
+--------------------------------------------
+
+type Env = IORef [(String, IORef SchemeVal)]
+
+--------------------------------------------
+-- Errors
+--------------------------------------------
+
+-- | Errors that might occur during evaluation.
 data SchemeError
-  = InvalidArgsNum (Maybe Integer) [SchemeVal]
-  | TypeMismatch T.Text SchemeVal
+  = -- | Invalid number of arguments passed
+    InvalidArgsNum (Maybe Integer) [SchemeVal]
+  | -- | Type mismatch error
+    TypeMismatch T.Text SchemeVal
+  | -- | Error during parsing.
+    Parser ParseError
 
 type ThrowsError = Either SchemeError
 
@@ -39,11 +62,18 @@ showSchemeVal val =
     Bool True -> "#t"
     Bool False -> "#f"
     Nil -> "()"
-    List values -> 
+    List values ->
       "(" <> T.unwords (map showSchemeVal values) <> ")"
-    DottedList head tail -> 
+    DottedList head tail ->
       "(" <> T.unwords (map showSchemeVal head) <> " . " <> showSchemeVal tail <> ")"
     PrimitiveFunc _ -> "<primitive>"
+    Func {params = args, vararg = varargs} ->
+      "(lambda (" <> T.unwords args
+        <> ( case varargs of
+               Nothing -> ""
+               Just arg -> " . " <> arg
+           )
+        <> ") ...)"
 
 instance Show SchemeVal where
   show = T.unpack . showSchemeVal
@@ -58,6 +88,7 @@ showError err =
       T.pack $ "Invalid Number of arguments. Expected: " <> show num <> ", but found " <> show (length args) <> "."
     TypeMismatch expected value ->
       T.pack "Type mismatch. Expected: " <> expected <> T.pack (", but found" <> show value <> ".")
+    Parser parseError -> T.pack $ show parseError
 
 --------------------------------------------
 -- Pretty instances
@@ -65,13 +96,20 @@ showError err =
 instance Pretty SchemeVal where
   pretty = \case
     Atom name -> pretty name
-    List values -> 
+    List values ->
       lparen <> hsep (map (\val -> pretty val <> "") values) <> rparen
-    DottedList head tail -> 
-      "(" <> hsep (map (\val -> pretty val <> "") head) <> " . " <> pretty tail <> ")"
+    DottedList head tail ->
+      lparen <> hsep (map (\val -> pretty val <> "") head) <> " . " <> pretty tail <> rparen
     Number num -> pretty num
     String str -> "\"" <> pretty str <> "\""
     Bool True -> "#t"
     Bool False -> "#f"
     PrimitiveFunc _ -> "<primitive>"
+    Func {params = args, vararg = varargs} ->
+      "(lambda (" <> hsep (map (\val -> pretty val <> "") args)
+        <> ( case varargs of
+               Nothing -> ""
+               Just arg -> " . " <> pretty arg
+           )
+        <> ") ...)"
     Nil -> "()"

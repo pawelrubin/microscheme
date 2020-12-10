@@ -19,14 +19,20 @@ import qualified Text.Parsec.Token as Tok
 langDef :: Tok.GenLanguageDef T.Text () Identity
 langDef =
   Lang.emptyDef
-    { Tok.commentStart = "{-",
-      Tok.commentEnd = "-}",
+    { Tok.commentStart = "#|",
+      Tok.commentEnd = "|#",
       Tok.commentLine = ";",
+      Tok.nestedComments = True,
+      Tok.caseSensitive = True,
       Tok.opStart = mzero,
       Tok.opLetter = mzero,
-      Tok.identStart = letter <|> oneOf "!$%&*/:<=>?^_~",
-      Tok.identLetter = digit <|> letter <|> oneOf "!$%&*/:<=>?^_~+-.@"
+      Tok.identStart = letter <|> symbol,
+      Tok.identLetter = letter <|> digit <|> symbol
     }
+
+-- | Match a special character
+symbol :: Parser Char
+symbol = oneOf "!$%&|*+-/:<=>?@^_~."
 
 lexer :: Tok.GenTokenParser T.Text () Identity
 lexer = Tok.makeTokenParser langDef
@@ -79,6 +85,7 @@ schemeVal =
       return (DottedList head tail)
     <|> _Quote <$> quoted schemeVal
     <|> Nil <$ nil
+    <?> "Scheme value"
 
 _Quote :: SchemeVal -> SchemeVal
 _Quote val = List [Atom "quote", val]
