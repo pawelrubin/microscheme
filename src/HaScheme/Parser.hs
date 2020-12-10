@@ -66,11 +66,34 @@ nil = try (char '\'') *> string "()" *> return () <?> "nil"
 
 schemeVal :: Parser SchemeVal
 schemeVal =
-  Number <$> try (sign <*> decimal)
+  hashVal
+    <|> Number <$> try (sign <*> decimal)
     <|> String <$> textLiteral
     <|> Atom <$> identifier
-    <|> List <$> parens (schemeVal `sepBy` whitespace)
+    <|> List <$> try (parens (schemeVal `sepBy` whitespace))
+    <|> do
+      char '('
+      head <- endBy schemeVal whitespace
+      tail <- char '.' >> whitespace >> schemeVal
+      char ')'
+      return (DottedList head tail)
+    <|> _Quote <$> quoted schemeVal
     <|> Nil <$ nil
+
+_Quote :: SchemeVal -> SchemeVal
+_Quote val = List [Atom "quote", val]
+
+quoted :: Parser a -> Parser a
+quoted p = try (char '\'') *> p
+
+hashVal :: Parser SchemeVal
+hashVal =
+  lexeme $
+    char '#'
+      *> ( (char 't' $> Bool True)
+             <|> (char 'f' $> Bool False)
+             <|> oneOf "bodxer(\\" *> fail "Unsupported"
+         )
 
 readExpr :: T.Text -> Either ParseError SchemeVal
 readExpr = parse (whitespace *> lexeme schemeVal <* eof) "<stdin>"
