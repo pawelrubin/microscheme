@@ -10,8 +10,8 @@ data SchemeVal
   | List [SchemeVal]
   | DottedList [SchemeVal] SchemeVal
   | Number Integer
-  | String T.Text
-  | Bool Bool
+  | -- | String T.Text
+    Bool Bool
   | PrimitiveFunc ([SchemeVal] -> ThrowsError SchemeVal)
   | Func
       { params :: [T.Text],
@@ -25,7 +25,7 @@ data SchemeVal
 -- Environment
 --------------------------------------------
 
-type Env = IORef [(String, IORef SchemeVal)]
+type Env = IORef [(T.Text, IORef SchemeVal)]
 
 --------------------------------------------
 -- Errors
@@ -39,6 +39,10 @@ data SchemeError
     TypeMismatch T.Text SchemeVal
   | -- | Error during parsing.
     Parser ParseError
+  | -- | Unbound variable.
+    UnboundVariable T.Text T.Text
+  | BadSpecialForm T.Text SchemeVal
+  | Default T.Text
 
 type ThrowsError = Either SchemeError
 
@@ -56,16 +60,16 @@ unwordsList list = T.unwords $ showSchemeVal <$> list
 showSchemeVal :: SchemeVal -> T.Text
 showSchemeVal val =
   case val of
-    Atom name -> T.pack $ show name
-    String str -> "\"" <> str <> "\""
-    Number num -> T.pack $ show num
-    Bool True -> "#t"
-    Bool False -> "#f"
-    Nil -> "()"
+    Atom name -> T.pack $ "Atom " <> show name
+    -- String str -> "String \"" <> str <> "\""
+    Number num -> T.pack $ "Number " <> show num
+    Bool True -> "Bool #t"
+    Bool False -> "Bool #f"
+    Nil -> "Nil ()"
     List values ->
-      "(" <> T.unwords (map showSchemeVal values) <> ")"
+      "List (" <> T.unwords (map showSchemeVal values) <> ")"
     DottedList head tail ->
-      "(" <> T.unwords (map showSchemeVal head) <> " . " <> showSchemeVal tail <> ")"
+      "DottedList (" <> T.unwords (map showSchemeVal head) <> " . " <> showSchemeVal tail <> ")"
     PrimitiveFunc _ -> "<primitive>"
     Func {params = args, vararg = varargs} ->
       "(lambda (" <> T.unwords args
@@ -89,19 +93,23 @@ showError err =
     TypeMismatch expected value ->
       T.pack "Type mismatch. Expected: " <> expected <> T.pack (", but found" <> show value <> ".")
     Parser parseError -> T.pack $ show parseError
+    (UnboundVariable message varName) -> message <> ": " <> varName
 
 --------------------------------------------
 -- Pretty instances
 --------------------------------------------
 instance Pretty SchemeVal where
   pretty = \case
-    Atom name -> pretty name
+    Atom name -> "Atom " <> pretty name
     List values ->
-      lparen <> hsep (map (\val -> pretty val <> "") values) <> rparen
+      "List "
+        <> lparen
+        <> hsep (map (\val -> pretty val <> "") values)
+        <> rparen
     DottedList head tail ->
       lparen <> hsep (map (\val -> pretty val <> "") head) <> " . " <> pretty tail <> rparen
     Number num -> pretty num
-    String str -> "\"" <> pretty str <> "\""
+    -- String str -> "\"" <> pretty str <> "\""
     Bool True -> "#t"
     Bool False -> "#f"
     PrimitiveFunc _ -> "<primitive>"

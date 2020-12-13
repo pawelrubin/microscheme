@@ -1,1 +1,3 @@
-(1 2 3 4 (5 6 7 8 "xD" "420" ()))
+(define x 2137)
+(define y 420)
+(define z (+ x y))

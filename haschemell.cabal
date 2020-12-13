@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 262fa685ef4acb635059ef49ad5e3216d7cdd49e06281ef4f164b6b2bb94244b
+-- hash: 64da260113374092d73c3c0217df2dde0afc40fadf75d19cf8005c405aff5a6e
 
 name:           haschemell
 version:        0.1.0.0
@@ -31,7 +31,11 @@ library
   exposed-modules:
       HaScheme
       HaScheme.Ast
+      HaScheme.Eval
       HaScheme.Parser
+      HaScheme.Primitives
+      HaScheme.SAst
+      HaScheme.Semantic
   other-modules:
       Paths_haschemell
   hs-source-dirs:
@@ -40,10 +44,12 @@ library
   ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
+    , containers
     , directory
     , llvm-hs >=9 && <10
     , llvm-hs-pretty >=0.9 && <1
     , llvm-hs-pure >=9 && <10
+    , mtl
     , parsec
     , pretty-simple
     , prettyprinter
@@ -61,11 +67,13 @@ executable haschemell
   ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
+    , containers
     , directory
     , haschemell
     , llvm-hs >=9 && <10
     , llvm-hs-pretty >=0.9 && <1
     , llvm-hs-pure >=9 && <10
+    , mtl
     , optparse-applicative
     , parsec
     , pretty-simple
@@ -85,11 +93,13 @@ test-suite haschemell-test
   ghc-options: -Wall -fno-warn-name-shadowing -Wcompat -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
+    , containers
     , directory
     , haschemell
     , llvm-hs >=9 && <10
     , llvm-hs-pretty >=0.9 && <1
     , llvm-hs-pure >=9 && <10
+    , mtl
     , parsec
     , pretty-simple
     , prettyprinter
