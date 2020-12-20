@@ -105,5 +105,5 @@ hashVal =
 readExpr :: T.Text -> Either ParseError SchemeVal
 readExpr = parse (whitespace *> lexeme schemeVal <* eof) "<stdin>"
 
-readExprFile :: SourceName -> T.Text -> Either ParseError SchemeVal
-readExprFile = parse (whitespace *> (List <$> (schemeVal `sepBy` whitespace)) <* eof)
+readExprFile :: SourceName -> T.Text -> Either ParseError [SchemeVal]
+readExprFile = parse (whitespace *> (schemeVal `sepBy` whitespace) <* eof)

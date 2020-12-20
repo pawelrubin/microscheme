@@ -33,6 +33,8 @@ dependencies:
   - llvm-hs-pretty >= 0.9 && < 1
   - mtl
   - containers
+  - process
+  - unix
 
 library:
   source-dirs: src

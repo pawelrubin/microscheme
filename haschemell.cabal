@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 64da260113374092d73c3c0217df2dde0afc40fadf75d19cf8005c405aff5a6e
+-- hash: cc8ab8f366e2fa3afb2e476fb433546ebb6c622ad472409580f0a6793b2e3154
 
 name:           haschemell
 version:        0.1.0.0
@@ -31,11 +31,12 @@ library
   exposed-modules:
       HaScheme
       HaScheme.Ast
+      HaScheme.CodeGen
       HaScheme.Eval
       HaScheme.Parser
-      HaScheme.Primitives
       HaScheme.SAst
       HaScheme.Semantic
+      HaScheme.TopLevel
   other-modules:
       Paths_haschemell
   hs-source-dirs:
@@ -53,8 +54,10 @@ library
     , parsec
     , pretty-simple
     , prettyprinter
+    , process
     , string-conversions
     , text
+    , unix
   default-language: Haskell2010
 
 executable haschemell
@@ -78,8 +81,10 @@ executable haschemell
     , parsec
     , pretty-simple
     , prettyprinter
+    , process
     , string-conversions
     , text
+    , unix
   default-language: Haskell2010
 
 test-suite haschemell-test
@@ -103,6 +108,8 @@ test-suite haschemell-test
     , parsec
     , pretty-simple
     , prettyprinter
+    , process
     , string-conversions
     , text
+    , unix
   default-language: Haskell2010

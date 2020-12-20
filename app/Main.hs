@@ -1,9 +1,11 @@
 module Main where
 
+import Data.String.Conversions
 import qualified Data.Text.IO as T
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Text
 import HaScheme
+import LLVM.Pretty
 import Options.Applicative
 import System.Directory
 import Text.Pretty.Simple
@@ -58,13 +60,21 @@ runOpts (Options action inputFile) = do
         then do
           code <- T.readFile path
           case readExprFile path code of
-            Right ast ->
-              case action of
-                Ast -> pPrint ast
-                Code -> putDoc $ pretty ast <> "\n"
-                LLVM -> putStrLn "LLVM"
-                Compile path -> putStrLn $ "Compile. output path = " <> show path
-                _ -> error "Invalid usage"
+            Right ast -> case action of
+              Code -> pPrint ast
+              -- _ -> case createProgram ast of
+              _ -> case evalProgram ast of
+                Right program ->
+                  let generatedIR = codegenList program
+                   in
+                  case action of
+                    Ast -> pPrint program
+                    -- Code -> putDoc $ pretty ast <> "\n"
+                    LLVM -> T.putStrLn . cs . ppllvm $ generatedIR
+                    -- Compile path -> compile generatedIR path
+                    -- Run -> run generatedIR >>= T.putStr
+                    _ -> error "Invalid usage"
+                Left err -> print err
             Left err -> print err
         else do
           errorWithoutStackTrace "File does not exist"

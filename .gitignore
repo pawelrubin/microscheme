@@ -1,2 +1,8 @@
 .stack-work/
 *~
+
+# VS Code
+.vscode
+
+# executables
+*.out

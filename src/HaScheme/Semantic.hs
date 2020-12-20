@@ -1,4 +1,4 @@
-module HaScheme where
+module HaScheme.Semantic where
 
 import Control.Monad.Except
 import Control.Monad.State
@@ -21,10 +21,9 @@ type Name = T.Text
 
 data SemanticError
   = UndefinedSymbol Name SchemeVal
-
-transformAst :: SchemeVal -> Semantic Program
-transformAst ast = case ast of
+  deriving (Show)
+-- transformAst :: SchemeVal -> Semantic Program
+-- transformAst ast = case ast of
   
 
-
-checkDefinition :: SchemeVal -> Semantic Definition
+-- checkDefinition :: SchemeVal -> Semantic Definition

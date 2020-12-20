@@ -1,6 +1,5 @@
 module HaScheme.Ast where
 
-import Data.IORef (IORef)
 import qualified Data.Text as T
 import Data.Text.Prettyprint.Doc
 import Text.ParserCombinators.Parsec
@@ -10,22 +9,9 @@ data SchemeVal
   | List [SchemeVal]
   | DottedList [SchemeVal] SchemeVal
   | Number Integer
-  | -- | String T.Text
-    Bool Bool
-  | PrimitiveFunc ([SchemeVal] -> ThrowsError SchemeVal)
-  | Func
-      { params :: [T.Text],
-        vararg :: Maybe T.Text,
-        body :: [SchemeVal],
-        closure :: Env
-      }
+  | String T.Text
+  | Bool Bool
   | Nil
-
---------------------------------------------
--- Environment
---------------------------------------------
-
-type Env = IORef [(T.Text, IORef SchemeVal)]
 
 --------------------------------------------
 -- Errors
@@ -40,18 +26,14 @@ data SchemeError
   | -- | Error during parsing.
     Parser ParseError
   | -- | Unbound variable.
-    UnboundVariable T.Text T.Text
+    UnboundVariable T.Text
+  | VariableRedefinition T.Text
+  | FunctionRedefinition T.Text
+  | UnboundFunction T.Text
   | BadSpecialForm T.Text SchemeVal
   | Default T.Text
 
 type ThrowsError = Either SchemeError
-
---------------------------------------------
--- Utils
---------------------------------------------
-
-unwordsList :: [SchemeVal] -> T.Text
-unwordsList list = T.unwords $ showSchemeVal <$> list
 
 --------------------------------------------
 -- Show instances
@@ -61,7 +43,7 @@ showSchemeVal :: SchemeVal -> T.Text
 showSchemeVal val =
   case val of
     Atom name -> T.pack $ "Atom " <> show name
-    -- String str -> "String \"" <> str <> "\""
+    String str -> "String \"" <> str <> "\""
     Number num -> T.pack $ "Number " <> show num
     Bool True -> "Bool #t"
     Bool False -> "Bool #f"
@@ -70,14 +52,6 @@ showSchemeVal val =
       "List (" <> T.unwords (map showSchemeVal values) <> ")"
     DottedList head tail ->
       "DottedList (" <> T.unwords (map showSchemeVal head) <> " . " <> showSchemeVal tail <> ")"
-    PrimitiveFunc _ -> "<primitive>"
-    Func {params = args, vararg = varargs} ->
-      "(lambda (" <> T.unwords args
-        <> ( case varargs of
-               Nothing -> ""
-               Just arg -> " . " <> arg
-           )
-        <> ") ...)"
 
 instance Show SchemeVal where
   show = T.unpack . showSchemeVal
@@ -93,7 +67,12 @@ showError err =
     TypeMismatch expected value ->
       T.pack "Type mismatch. Expected: " <> expected <> T.pack (", but found" <> show value <> ".")
     Parser parseError -> T.pack $ show parseError
-    (UnboundVariable message varName) -> message <> ": " <> varName
+    UnboundVariable varName -> "Getting an unbound variable: " <> varName
+    VariableRedefinition varName -> "Variable redefinition: " <> varName
+    FunctionRedefinition fName -> "Function redefinition: " <> fName
+    UnboundFunction fName -> "Getting an unbound function: " <> fName
+    BadSpecialForm msg val -> T.pack $ "Invalid special form: " <> T.unpack msg <> " of " <> show val
+    Default msg -> "Error: " <> msg
 
 --------------------------------------------
 -- Pretty instances
@@ -109,15 +88,7 @@ instance Pretty SchemeVal where
     DottedList head tail ->
       lparen <> hsep (map (\val -> pretty val <> "") head) <> " . " <> pretty tail <> rparen
     Number num -> pretty num
-    -- String str -> "\"" <> pretty str <> "\""
+    String str -> "\"" <> pretty str <> "\""
     Bool True -> "#t"
     Bool False -> "#f"
-    PrimitiveFunc _ -> "<primitive>"
-    Func {params = args, vararg = varargs} ->
-      "(lambda (" <> hsep (map (\val -> pretty val <> "") args)
-        <> ( case varargs of
-               Nothing -> ""
-               Just arg -> " . " <> pretty arg
-           )
-        <> ") ...)"
     Nil -> "()"
