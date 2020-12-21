@@ -78,10 +78,10 @@ schemeVal =
     <|> Atom <$> identifier
     <|> List <$> try (parens (schemeVal `sepBy` whitespace))
     <|> do
-      char '('
+      _ <- char '('
       head <- endBy schemeVal whitespace
       tail <- char '.' >> whitespace >> schemeVal
-      char ')'
+      _ <- char ')'
       return (DottedList head tail)
     <|> _Quote <$> quoted schemeVal
     <|> Nil <$ nil

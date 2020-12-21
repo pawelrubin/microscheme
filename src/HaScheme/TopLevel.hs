@@ -11,6 +11,15 @@ import System.IO
 import System.Posix.Temp
 import System.Process
 
+asm :: Module -> FilePath -> IO ()
+asm llvmModule outFile =
+  bracket (mkdtemp "build") removePathForcibly $ \buildDir ->
+    withCurrentDirectory buildDir $ do
+      (llvm, llvmHandle) <- mkstemps "output" ".ll"
+      T.hPutStrLn llvmHandle (cs $ ppllvm llvmModule)
+      hClose llvmHandle
+      callProcess "llc-9" [llvm, "-o", "../" <> outFile]
+
 compile :: Module -> FilePath -> IO ()
 compile llvmModule outFile =
   bracket (mkdtemp "build") removePathForcibly $ \buildDir ->

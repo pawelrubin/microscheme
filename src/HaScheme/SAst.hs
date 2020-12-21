@@ -1,8 +1,6 @@
 module HaScheme.SAst where
 
 import qualified Data.Text as T
-import Control.Monad.State
-import HaScheme.Eval
 
 -- Program
 
@@ -32,6 +30,3 @@ data Expr
 
 data Type
   = TInt
-
--- makeProgram :: [EvalAst] -> State Program
--- makeProgram ast = do

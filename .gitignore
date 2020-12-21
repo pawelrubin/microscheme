@@ -6,3 +6,9 @@
 
 # executables
 *.out
+
+# asm
+*.s
+
+# llvm
+*.ll
