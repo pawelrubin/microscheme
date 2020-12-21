@@ -16,6 +16,7 @@ import HaScheme.Ast (SchemeError (..), SchemeVal (..))
 import LLVM.AST (Operand)
 import qualified LLVM.AST as AST
 import qualified LLVM.AST.Constant as C
+import qualified LLVM.AST.IntegerPredicate as IP
 import LLVM.AST.Name
 import qualified LLVM.AST.Type as AST
 import LLVM.AST.Typed (typeOf)
@@ -36,7 +37,15 @@ primitives =
     [ ("+", Add),
       ("-", Sub),
       ("*", Mult),
-      ("/", Div)
+      ("/", Div),
+      ("&&", And),
+      ("||", Or),
+      (">", Gt),
+      ("<", Lt),
+      (">=", Ge),
+      ("<=", Le),
+      ("=", Eq),
+      ("/=", Ne)
     ]
 
 type EvalState = ExceptT SchemeError (State Env)
@@ -100,10 +109,20 @@ data EvalAst
   deriving (Show)
 
 data Primitive
-  = Add
+  = -- arithmetic
+    Add
   | Sub
   | Mult
   | Div
+  | -- Boolean
+    And
+  | Or
+  | Gt
+  | Lt
+  | Ge
+  | Le
+  | Eq
+  | Ne
   deriving (Show)
 
 makeLambda :: [SchemeVal] -> [SchemeVal] -> EvalState EvalAst
@@ -212,18 +231,36 @@ codegenExpr expr = case expr of
       Mult -> foldM L.mul x xs
       Sub -> foldM L.sub x xs
       Div -> foldM L.sdiv x xs
+      And -> foldM L.and x xs
+      Or -> foldM L.or x xs
+      Eq -> foldM (L.icmp IP.EQ) x xs
+      Ne -> foldM (L.icmp IP.NE) x xs
+      -- TODO: Fix for multiple values
+      Lt -> foldM (L.icmp IP.SLT) x xs
+      Gt -> foldM (L.icmp IP.SGT) x xs
+      Le -> foldM (L.icmp IP.SLE) x xs
+      Ge -> foldM (L.icmp IP.SGE) x xs
+  VariableSet varName newValue -> do
+    var <- gets ((M.! varName) . operands)
+    L.store var 0 =<< codegenExpr newValue
+    return var
   _ -> undefined
+
+codegenVariableDef :: T.Text -> EvalAst -> LLVM ()
+codegenVariableDef name value = do
+  let _name = mkName $ cs name
+      val = codegenExpr value
+  var <- L.global _name AST.i32 (C.Int 32 0)
+  -- L.store var 0 val
+  registerOperand name var
 
 codegenValue :: EvalAst -> LLVM ()
 codegenValue val = case val of
-  VariableDefinition name value -> do
-    let _name = mkName $ cs name
-    var <- L.global _name AST.i32 (C.Int 32 0)
-    registerOperand name var
+  VariableDefinition name value -> codegenVariableDef name value
   FunctionDefinition fName args body -> do
     let params = map mkParam args
     function <- L.function name params AST.i32 genBody
-    modify $ \env -> env {operands = M.insert fName function (operands env)}
+    registerOperand fName function
     where
       name = mkName (cs fName)
       mkParam :: T.Text -> (AST.Type, L.ParameterName)
