@@ -34,7 +34,10 @@ primitives =
       -- list
       ("cons", Cons),
       -- functional
-      ("apply", Apply)
+      ("apply", Apply),
+      -- io
+      ("display", Display),
+      ("newline", Newline),
     ]
 
 type EvalState = ExceptT SchemeError (State Env)
@@ -112,8 +115,13 @@ data Primitive
   | Le
   | Eq
   | Ne
-  | Cons
-  | Apply
+  | -- list
+    Cons
+  | -- functional
+    Apply
+  | -- io
+    Display
+  | Newline
   deriving (Show)
 
 makeLambda :: [SchemeVal] -> [SchemeVal] -> EvalState EvalAst

@@ -72,7 +72,14 @@ codegenPrimitiveCall prim (x : xs) = do
     Gt -> foldM (L.icmp IP.SGT) x xs
     Le -> foldM (L.icmp IP.SLE) x xs
     Ge -> foldM (L.icmp IP.SGE) x xs
+    Display ->
+      do
+        f <- gets ((M.! "display") . operands)
+        L.call f [(x, [])]
     _ -> error "Not implemented"
+codegenPrimitiveCall Newline _ = do
+  f <- gets ((M.! "newline") . operands)
+  L.call f []
 codegenPrimitiveCall _ [] = error "Primitive function called without arguments"
 
 codegenVariableSet :: T.Text -> EvalAst -> Codegen Operand
@@ -121,6 +128,12 @@ codegenList program =
   flip evalState emptyState $
     L.buildModuleT "Micro Scheme" $
       do
+        display <- L.extern (mkName "display") [AST.i32] AST.void
+        registerOperand "display" display
+
+        newline <- L.extern (mkName "newline") [] AST.void
+        registerOperand "newline" newline
+
         _ <- L.function (mkName "main") [] AST.i32 genMain
         return ()
   where
