@@ -80,6 +80,9 @@ codegenPrimitiveCall prim (x : xs) = do
 codegenPrimitiveCall Newline _ = do
   f <- gets ((M.! "newline") . operands)
   L.call f []
+codegenPrimitiveCall Read _ = do
+  f <- gets ((M.! "read") . operands)
+  L.call f []
 codegenPrimitiveCall _ [] = error "Primitive function called without arguments"
 
 codegenVariableSet :: T.Text -> EvalAst -> Codegen Operand
@@ -133,6 +136,9 @@ codegenList program =
 
         newline <- L.extern (mkName "newline") [] AST.void
         registerOperand "newline" newline
+
+        read <- L.extern (mkName "read") [] AST.i32
+        registerOperand "read" read
 
         _ <- L.function (mkName "main") [] AST.i32 genMain
         return ()

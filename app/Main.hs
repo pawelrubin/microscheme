@@ -36,12 +36,8 @@ actionP =
     <|> flag'
       LLVM
       (long "llvm" <> short 'l' <> help "Pretty print the generated llvm")
-    <|> flag'
-      Compile
-      (long "compile" <> short 'c' <> help "Compile to an executable")
-    <*> strOption (short 'o' <> value "a.out" <> metavar "FILE")
-    -- Run the code
-    <|> pure Run
+    <|> flag' Run (long "run" <> short 'r' <> help "Compile and run the code [experimental]")
+    <|> pure (Compile "a.out")
 
 optionsP :: Parser Options
 optionsP =

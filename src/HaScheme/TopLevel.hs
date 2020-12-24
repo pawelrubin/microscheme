@@ -28,11 +28,12 @@ compile llvmModule outFile =
       (llvm, llvmHandle) <- mkstemps "output" ".ll"
       -- write the llvmModule to a file
       T.hPutStrLn llvmHandle (cs $ ppllvm llvmModule)
+      let runtime = "../src/runtime.c"
       hClose llvmHandle
       -- link the runtime with the assembly
       callProcess
         "clang"
-        ["-Wno-override-module", "-lm", llvm, "-o", "../" <> outFile]
+        ["-Wno-override-module", "-lm", llvm, runtime, "-o", "../" <> outFile]
 
 run :: Module -> IO Text
 run llvmModule = do

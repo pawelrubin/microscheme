@@ -38,6 +38,7 @@ primitives =
       -- io
       ("display", Display),
       ("newline", Newline),
+      ("read", Read)
     ]
 
 type EvalState = ExceptT SchemeError (State Env)
@@ -122,6 +123,7 @@ data Primitive
   | -- io
     Display
   | Newline
+  | Read
   deriving (Show)
 
 makeLambda :: [SchemeVal] -> [SchemeVal] -> EvalState EvalAst
