@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- To create ConvertibleStrings instance for ShortByteString
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecursiveDo #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module HaScheme.CodeGen where
@@ -52,7 +53,24 @@ codegenExpr expr = case expr of
   PrimitiveCall prim args -> codegenPrimitiveCall prim args
   VariableSet varName newValue -> codegenVariableSet varName newValue
   VariableDefinition name value -> codegenVariableDef name value
+  IfCall cond ifTrue ifFalse -> codegenIfExpr cond ifTrue ifFalse
   _ -> undefined
+
+codegenIfExpr :: EvalAst -> EvalAst -> EvalAst -> Codegen Operand
+codegenIfExpr c t f = mdo
+  cond <- codegenExpr c
+  L.condBr cond thenBlock elseBlock
+
+  thenBlock <- L.block `L.named` "then"
+  thenValue <- codegenExpr t
+  mkTerminator $ L.br mergeBlock
+
+  elseBlock <- L.block `L.named` "else"
+  elseValue <- codegenExpr f
+  mkTerminator $ L.br mergeBlock
+
+  mergeBlock <- L.block `L.named` "merge"
+  L.phi [(thenValue, thenBlock), (elseValue, elseBlock)]
 
 codegenPrimitiveCall :: Primitive -> [EvalAst] -> Codegen Operand
 codegenPrimitiveCall prim (x : xs) = do
@@ -150,3 +168,8 @@ codegenList program =
 -- easy conversion to Text with cs from Data.String.Conversions
 instance ConvertibleStrings T.Text ShortByteString where
   convertString = fromString . T.unpack
+
+mkTerminator :: Codegen () -> Codegen ()
+mkTerminator instr = do
+  check <- L.hasTerminator
+  unless check instr

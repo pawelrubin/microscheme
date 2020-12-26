@@ -1,3 +1,4 @@
 (define x (read))
-(display x)
+(define y (if (> x 0) (foo) x))
+(display y)
 (newline)
