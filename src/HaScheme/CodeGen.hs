@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 -- To create ConvertibleStrings instance for ShortByteString
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module HaScheme.CodeGen where
@@ -14,6 +16,7 @@ import qualified Data.Text as T
 import HaScheme.Eval
 import LLVM.AST (Operand)
 import qualified LLVM.AST as AST
+import qualified LLVM.AST.Attribute as Atr
 import qualified LLVM.AST.Constant as C
 import qualified LLVM.AST.IntegerPredicate as IP
 import LLVM.AST.Name
@@ -54,7 +57,14 @@ codegenExpr expr = case expr of
   VariableSet varName newValue -> codegenVariableSet varName newValue
   VariableDefinition name value -> codegenVariableDef name value
   IfCall cond ifTrue ifFalse -> codegenIfExpr cond ifTrue ifFalse
-  _ -> undefined
+  FunctionCall name params -> codegenFunCall name params
+  x -> error $ show x
+
+codegenFunCall :: T.Text -> [EvalAst] -> Codegen Operand
+codegenFunCall fName fParams = do
+  f <- gets ((M.! fName) . operands)
+  params <- mapM codegenExpr fParams
+  L.call f (map (,[]) params)
 
 codegenIfExpr :: EvalAst -> EvalAst -> EvalAst -> Codegen Operand
 codegenIfExpr c t f = mdo
@@ -86,22 +96,19 @@ codegenPrimitiveCall prim (x : xs) = do
     Eq -> foldM (L.icmp IP.EQ) x xs
     Ne -> foldM (L.icmp IP.NE) x xs
     -- TODO: Fix for multiple values
+    Mod -> foldM L.srem x xs
     Lt -> foldM (L.icmp IP.SLT) x xs
     Gt -> foldM (L.icmp IP.SGT) x xs
     Le -> foldM (L.icmp IP.SLE) x xs
     Ge -> foldM (L.icmp IP.SGE) x xs
-    Display ->
-      do
-        f <- gets ((M.! "display") . operands)
-        L.call f [(x, [])]
+    Display -> callFunction "display" [(x, [])]
     _ -> error "Not implemented"
-codegenPrimitiveCall Newline _ = do
-  f <- gets ((M.! "newline") . operands)
-  L.call f []
-codegenPrimitiveCall Read _ = do
-  f <- gets ((M.! "read") . operands)
-  L.call f []
+codegenPrimitiveCall Newline _ = callFunction "newline" []
+codegenPrimitiveCall Read _ = callFunction "read" []
 codegenPrimitiveCall _ [] = error "Primitive function called without arguments"
+
+callFunction :: T.Text -> [(Operand, [Atr.ParameterAttribute])] -> Codegen Operand
+callFunction f xs = flip L.call xs =<< gets ((M.! f) . operands)
 
 codegenVariableSet :: T.Text -> EvalAst -> Codegen Operand
 codegenVariableSet varName newValue = do
@@ -120,10 +127,11 @@ codegenVariableDef name value = do
   return var
 
 codegenFunction :: T.Text -> [T.Text] -> [EvalAst] -> LLVM ()
-codegenFunction fName args body = do
+codegenFunction fName args body = mdo
+  registerOperand fName function
   let params = map mkParam args
   function <- L.function name params AST.i32 genBody
-  registerOperand fName function
+  return ()
   where
     name = mkName (cs fName)
     mkParam :: T.Text -> (AST.Type, L.ParameterName)
@@ -144,25 +152,36 @@ codegenFunction fName args body = do
       -- emit return
       L.ret . last =<< mapM codegenExpr body
 
+emitBuiltIns :: LLVM ()
+emitBuiltIns = mapM_ emitBuiltIn builtIns
+  where
+    emitBuiltIn (name, paramsTypes, returnType) = do
+      f <- L.extern (mkName $ cs name) paramsTypes returnType
+      registerOperand name f
+    builtIns =
+      [ ("display", [AST.i32], AST.void),
+        ("newline", [], AST.void),
+        ("read", [], AST.i32)
+      ]
+
 codegenList :: [EvalAst] -> AST.Module
 codegenList program =
   flip evalState emptyState $
     L.buildModuleT "Micro Scheme" $
       do
-        display <- L.extern (mkName "display") [AST.i32] AST.void
-        registerOperand "display" display
-
-        newline <- L.extern (mkName "newline") [] AST.void
-        registerOperand "newline" newline
-
-        read <- L.extern (mkName "read") [] AST.i32
-        registerOperand "read" read
-
+        emitBuiltIns
+        mapM_ genFunction funDefs
         _ <- L.function (mkName "main") [] AST.i32 genMain
         return ()
   where
-    genMain _ = mapM_ codegenExpr program >> L.ret (L.int32 0)
+    (funDefs, program') = partition (\case FunctionDefinition {} -> True; _ -> False) program
+    genMain _ = mapM_ codegenExpr program' >> L.ret (L.int32 0)
+    genFunction (FunctionDefinition n xs ys) = codegenFunction n xs ys
+    genFunction _ = return ()
     emptyState = GenState {operands = M.empty}
+
+partition :: (a -> Bool) -> [a] -> ([a], [a])
+partition p xs = (filter p xs, filter (not . p) xs)
 
 -- llvm-hs uses ShortByteString for names, but we want
 -- easy conversion to Text with cs from Data.String.Conversions

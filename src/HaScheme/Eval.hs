@@ -22,6 +22,7 @@ primitives =
       ("-", Sub),
       ("*", Mult),
       ("/", Div),
+      ("%", Mod),
       -- boolean
       ("&&", And),
       ("||", Or),
@@ -107,6 +108,7 @@ data Primitive
   | Sub
   | Mult
   | Div
+  | Mod
   | -- Boolean
     And
   | Or
