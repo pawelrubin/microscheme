@@ -1,5 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+-- |
+-- Module      : HaScheme.Parser
+-- Copyright   : Paweł Rubin
+--
+-- This module implements parsing of the Micro Scheme language.
 module HaScheme.Parser
   ( readExpr,
     readExprFile,
@@ -7,13 +12,28 @@ module HaScheme.Parser
 where
 
 import Control.Monad (mzero)
-import Data.Functor
+import Data.Functor (($>))
 import Data.Functor.Identity (Identity)
 import qualified Data.Text as T
-import HaScheme.Ast
+import HaScheme.Ast (SchemeVal (..))
 import Text.Parsec
+  ( ParseError,
+    SourceName,
+    char,
+    digit,
+    endBy,
+    eof,
+    letter,
+    oneOf,
+    parse,
+    sepBy,
+    string,
+    try,
+    (<?>),
+    (<|>),
+  )
 import qualified Text.Parsec.Language as Lang
-import Text.Parsec.Text
+import Text.Parsec.Text (Parser)
 import qualified Text.Parsec.Token as Tok
 
 langDef :: Tok.GenLanguageDef T.Text () Identity

@@ -1,89 +1,31 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+-- |
+-- Module      : HaScheme.Eval
+-- Copyright   : Paweł Rubin
+--
+-- This module implements syntactic analysis of AST of the Micro Scheme language.
 module HaScheme.Eval where
 
 import Control.Monad.Except
-import Control.Monad.State
+  ( ExceptT,
+    MonadError (throwError),
+    runExceptT,
+    unless,
+  )
+import Control.Monad.State (State, evalState, gets, modify)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import HaScheme.Ast (SchemeError (..), SchemeVal (..))
+import HaScheme.Primitives (Primitive, primitives)
 
 data Env = Env
   { variables :: [T.Text],
     functions :: [T.Text] -- Add more data to function table
   }
 
-primitives :: M.Map T.Text Primitive
-primitives =
-  M.fromList
-    [ -- numeric
-      ("+", Add),
-      ("-", Sub),
-      ("*", Mult),
-      ("/", Div),
-      ("%", Mod),
-      -- boolean
-      ("&&", And),
-      ("||", Or),
-      (">", Gt),
-      ("<", Lt),
-      (">=", Ge),
-      ("<=", Le),
-      ("=", Eq),
-      ("/=", Ne),
-      -- list
-      ("cons", Cons),
-      -- functional
-      ("apply", Apply),
-      -- io
-      ("display", Display),
-      ("newline", Newline),
-      ("read", Read)
-    ]
-
 type EvalState = ExceptT SchemeError (State Env)
-
-eval :: SchemeVal -> EvalState EvalAst
--- literals
-eval (Number num) = pure (NumConst num)
-eval (Bool bool) = pure (BoolConst bool)
-eval (String str) = pure (StrConst str)
--- variables
-eval (Atom id) = getVar id
-eval (List atoms) =
-  case atoms of
-    [Atom "quote", val] -> eval val
-    [Atom "if", cond, ifTrue, ifFalse] -> do
-      _cond <- eval cond
-      _ifTrue <- eval ifTrue
-      _ifFalse <- eval ifFalse
-      return $ IfCall _cond _ifTrue _ifFalse
-    [Atom "set!", Atom name, value] -> setVar name value
-    [Atom "define", Atom name, value] -> defineVar name value
-    (Atom "define" : List (Atom name : params) : body) -> setFunction name params body
-    (Atom "define" : _) -> throwError $ Default "Illegal define."
-    (Atom "lambda" : List params : body) -> makeLambda params body
-    (Atom function : args) -> do
-      -- first check for primitive function
-      let prim = M.lookup function primitives
-      args <- evalList args
-      case prim of
-        Just prim -> return $ PrimitiveCall prim args
-        Nothing -> do
-          functions <- gets functions
-          unless (function `elem` functions) $ throwError $ UnboundFunction function
-          return $ FunctionCall function args
-    _ -> undefined
-eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
-
-evalProgram :: [SchemeVal] -> Either SchemeError [EvalAst]
-evalProgram program = evalState (runExceptT (evalList program)) baseEnv
-  where
-    baseEnv = Env {functions = [], variables = []}
-
-evalList :: [SchemeVal] -> EvalState [EvalAst]
-evalList = mapM eval
 
 data EvalAst
   = Var T.Text
@@ -100,32 +42,6 @@ data EvalAst
   | FunctionCall T.Text [EvalAst]
   | IfCall EvalAst EvalAst EvalAst
   | EList [EvalAst]
-  deriving (Show)
-
-data Primitive
-  = -- arithmetic
-    Add
-  | Sub
-  | Mult
-  | Div
-  | Mod
-  | -- Boolean
-    And
-  | Or
-  | Gt
-  | Lt
-  | Ge
-  | Le
-  | Eq
-  | Ne
-  | -- list
-    Cons
-  | -- functional
-    Apply
-  | -- io
-    Display
-  | Newline
-  | Read
   deriving (Show)
 
 makeLambda :: [SchemeVal] -> [SchemeVal] -> EvalState EvalAst
@@ -196,3 +112,44 @@ defineVar var val = do
       modify $ \env -> env {variables = var : variables}
       value <- eval val
       return $ VariableDefinition var value
+
+evalList :: [SchemeVal] -> EvalState [EvalAst]
+evalList = mapM eval
+
+eval :: SchemeVal -> EvalState EvalAst
+-- literals
+eval (Number num) = pure (NumConst num)
+eval (Bool bool) = pure (BoolConst bool)
+eval (String str) = pure (StrConst str)
+-- variables
+eval (Atom id) = getVar id
+eval (List atoms) =
+  case atoms of
+    [Atom "quote", val] -> eval val
+    [Atom "if", cond, ifTrue, ifFalse] -> do
+      _cond <- eval cond
+      _ifTrue <- eval ifTrue
+      _ifFalse <- eval ifFalse
+      return $ IfCall _cond _ifTrue _ifFalse
+    [Atom "set!", Atom name, value] -> setVar name value
+    [Atom "define", Atom name, value] -> defineVar name value
+    (Atom "define" : List (Atom name : params) : body) -> setFunction name params body
+    (Atom "define" : _) -> throwError $ Default "Illegal define."
+    (Atom "lambda" : List params : body) -> makeLambda params body
+    (Atom function : args) -> do
+      -- first check for primitive function
+      let prim = M.lookup function primitives
+      args <- evalList args
+      case prim of
+        Just prim -> return $ PrimitiveCall prim args
+        Nothing -> do
+          functions <- gets functions
+          unless (function `elem` functions) $ throwError $ UnboundFunction function
+          return $ FunctionCall function args
+    _ -> undefined
+eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
+
+evalProgram :: [SchemeVal] -> Either SchemeError [EvalAst]
+evalProgram program = evalState (runExceptT (evalList program)) baseEnv
+  where
+    baseEnv = Env {functions = [], variables = []}

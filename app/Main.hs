@@ -21,12 +21,6 @@ data Options = Options
     inputFile :: FilePath
   }
 
-main :: IO ()
-main = runOpts =<< execParser (optionsP `withInfo` infoString)
-  where
-    withInfo opts desc = info (helper <*> opts) $ progDesc desc
-    infoString = "Micro Scheme compiler"
-
 actionP :: Parser Action
 actionP =
   flag' Parse (long "parse" <> short 'p' <> help "Pretty print the parse tree")
@@ -56,7 +50,7 @@ runOpts (Options action path) = do
           Parse -> pPrint ast
           _ -> case evalProgram ast of
             Right program ->
-              let generatedIR = codegenList program
+              let generatedIR = codegenProgram program
                in case action of
                     Ast -> pPrint program
                     LLVM -> T.putStrLn . cs . ppllvm $ generatedIR
@@ -69,3 +63,8 @@ runOpts (Options action path) = do
         Left err -> print err
     else do
       errorWithoutStackTrace "File does not exist"
+
+main :: IO ()
+main = runOpts =<< execParser (withInfo optionsP "Micro Scheme compiler")
+  where
+    withInfo opts desc = info (helper <*> opts) $ progDesc desc

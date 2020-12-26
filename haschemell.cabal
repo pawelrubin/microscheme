@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e10343858d03ff4682bc365a7f6bbe6e451f1a057544bfa3c56d9b003576d4c1
+-- hash: 32dca1c5b7efab611b88bf4a4a4eca33e4c882be0e69ff3cb88f847e3a270175
 
 name:           haschemell
 version:        0.1.0.0
@@ -34,7 +34,7 @@ library
       HaScheme.CodeGen
       HaScheme.Eval
       HaScheme.Parser
-      HaScheme.SAst
+      HaScheme.Primitives
       HaScheme.TopLevel
   other-modules:
       Paths_haschemell

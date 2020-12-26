@@ -1,7 +1,13 @@
+
+-- |
+-- Module      : HaScheme.Ast
+-- Copyright   : Paweł Rubin
+--
+-- This module introduces the AST data type and the SchemeError data type.
 module HaScheme.Ast where
 
 import qualified Data.Text as T
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec (ParseError)
 
 data SchemeVal
   = Atom T.Text

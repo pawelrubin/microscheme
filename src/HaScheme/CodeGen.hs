@@ -6,20 +6,42 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module HaScheme.CodeGen where
+-- |
+-- Module      : HaScheme.Codegen
+-- Copyright   : Paweł Rubin
+--
+-- This module implements LLVM IR generation of the Micro Scheme language.
+module HaScheme.CodeGen
+  ( codegenProgram,
+  )
+where
 
 import Control.Monad.State
+  ( MonadState,
+    State,
+    evalState,
+    foldM,
+    forM_,
+    gets,
+    modify,
+    unless,
+  )
 import qualified Data.Map as M
 import Data.String (fromString)
-import Data.String.Conversions
+import Data.String.Conversions (ConvertibleStrings (..), cs)
 import qualified Data.Text as T
 import HaScheme.Eval
+  ( EvalAst (..),
+  )
+import HaScheme.Primitives
+  ( Primitive (..),
+  )
 import LLVM.AST (Operand)
 import qualified LLVM.AST as AST
 import qualified LLVM.AST.Attribute as Atr
 import qualified LLVM.AST.Constant as C
 import qualified LLVM.AST.IntegerPredicate as IP
-import LLVM.AST.Name
+import LLVM.AST.Name (mkName)
 import qualified LLVM.AST.Type as AST
 import LLVM.AST.Typed (typeOf)
 import qualified LLVM.IRBuilder.Constant as L
@@ -32,21 +54,35 @@ newtype GenState = GenState
   { operands :: M.Map T.Text Operand
   }
 
-registerOperand :: MonadState GenState m => T.Text -> Operand -> m ()
-registerOperand name op =
-  modify $ \env -> env {operands = M.insert name op (operands env)}
-
 type LLVM = L.ModuleBuilderT (State GenState)
 
 type Codegen = L.IRBuilderT LLVM
 
--- | Prevents from polluting the global environment with local variable names
-locally :: MonadState s m => m a -> m a
-locally computation = do
-  oldState <- get
-  result <- computation
-  put oldState
-  return result
+instance ConvertibleStrings T.Text ShortByteString where
+  convertString = fromString . T.unpack
+
+--------------------------------------------
+-- Utilities
+--------------------------------------------
+
+registerOperand :: MonadState GenState m => T.Text -> Operand -> m ()
+registerOperand name op =
+  modify $ \env -> env {operands = M.insert name op (operands env)}
+
+callFunction :: T.Text -> [(Operand, [Atr.ParameterAttribute])] -> Codegen Operand
+callFunction f xs = flip L.call xs =<< gets ((M.! f) . operands)
+
+partition :: (a -> Bool) -> [a] -> ([a], [a])
+partition p xs = (filter p xs, filter (not . p) xs)
+
+mkTerminator :: Codegen () -> Codegen ()
+mkTerminator instr = do
+  check <- L.hasTerminator
+  unless check instr
+
+--------------------------------------------
+-- Code generation
+--------------------------------------------
 
 codegenExpr :: EvalAst -> Codegen Operand
 codegenExpr expr = case expr of
@@ -107,9 +143,6 @@ codegenPrimitiveCall Newline _ = callFunction "newline" []
 codegenPrimitiveCall Read _ = callFunction "read" []
 codegenPrimitiveCall _ [] = error "Primitive function called without arguments"
 
-callFunction :: T.Text -> [(Operand, [Atr.ParameterAttribute])] -> Codegen Operand
-callFunction f xs = flip L.call xs =<< gets ((M.! f) . operands)
-
 codegenVariableSet :: T.Text -> EvalAst -> Codegen Operand
 codegenVariableSet varName newValue = do
   var <- gets ((M.! varName) . operands)
@@ -128,6 +161,8 @@ codegenVariableDef name value = do
 
 codegenFunction :: T.Text -> [T.Text] -> [EvalAst] -> LLVM ()
 codegenFunction fName args body = mdo
+  -- Add function to symbol table before generating the function body
+  -- in case of a recursive call.
   registerOperand fName function
   let params = map mkParam args
   function <- L.function name params AST.i32 genBody
@@ -164,8 +199,9 @@ emitBuiltIns = mapM_ emitBuiltIn builtIns
         ("read", [], AST.i32)
       ]
 
-codegenList :: [EvalAst] -> AST.Module
-codegenList program =
+-- | Main function for LLVM IR generation.
+codegenProgram :: [EvalAst] -> AST.Module
+codegenProgram program =
   flip evalState emptyState $
     L.buildModuleT "Micro Scheme" $
       do
@@ -179,16 +215,3 @@ codegenList program =
     genFunction (FunctionDefinition n xs ys) = codegenFunction n xs ys
     genFunction _ = return ()
     emptyState = GenState {operands = M.empty}
-
-partition :: (a -> Bool) -> [a] -> ([a], [a])
-partition p xs = (filter p xs, filter (not . p) xs)
-
--- llvm-hs uses ShortByteString for names, but we want
--- easy conversion to Text with cs from Data.String.Conversions
-instance ConvertibleStrings T.Text ShortByteString where
-  convertString = fromString . T.unpack
-
-mkTerminator :: Codegen () -> Codegen ()
-mkTerminator instr = do
-  check <- L.hasTerminator
-  unless check instr

@@ -1,15 +1,23 @@
+-- |
+-- Module      : HaScheme.TopLevel
+-- Copyright   : Paweł Rubin
+--
+-- This module introduces an API for LLVM IR generation and compilation using clang.
 module HaScheme.TopLevel where
 
 import Control.Exception (bracket)
-import Data.String.Conversions
+import Data.String.Conversions (cs)
 import Data.Text (Text)
 import qualified Data.Text.IO as T
-import LLVM.AST
-import LLVM.Pretty
+import LLVM.AST (Module)
+import LLVM.Pretty (ppllvm)
 import System.Directory
-import System.IO
-import System.Posix.Temp
-import System.Process
+  ( removePathForcibly,
+    withCurrentDirectory,
+  )
+import System.IO (hClose)
+import System.Posix.Temp (mkdtemp, mkstemps)
+import System.Process (callProcess, readProcess)
 
 asm :: Module -> FilePath -> IO ()
 asm llvmModule outFile =
