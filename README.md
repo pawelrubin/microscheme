@@ -23,6 +23,20 @@ Install llvm
 $ apt-get install llvm-9-dev
 ```
 
+Alternatively, run the automatic installer
+```shell
+$ wget https://apt.llvm.org/llvm.sh
+$ chmod +x llvm.sh
+$ ./llvm.sh 9 # might require sudo
+```
+
+In case of failure install dependencies:
+
+```shell
+$ apt install wget lsb-release software-properties-common
+```
+
+
 ### Windows
 
 WSL setup with any Linux distribution is a prefered way of development, however, this project can be build directly in the Windows environment.
