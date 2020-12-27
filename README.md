@@ -1,6 +1,52 @@
 # Micro Scheme Compiler
 
-# Install
+Micro Scheme language is a subset of the Scheme programming language. It compiles to the LLVM intermediate representation.
+
+# Features
+- arithmetic operations (`+`, `-`, `*`, `/`, `%`)
+- boolean operations (`&&`, `||`, `>`, `<`, `>=`, `<=`, `=`, `!=`)
+- conditional expressions
+- variables
+- user-defined functions
+- simple input/output operations (`read`, `display`)
+
+# Example
+
+The code below is a recursive implementation of the factorial function written in the Micro Scheme language.
+
+```lisp
+(define (fact n)
+    (if (= n 0)
+        1
+        (* (fact (- n 1)) n)))
+```
+
+It will be compiled to the LLVM IR below:
+
+```llvm
+define i32 @fact(i32 %n) {
+entry:
+  %0 = alloca i32 
+  store i32 %n, i32* %0 
+  %1 = load i32, i32* %0 
+  %2 = icmp eq i32 %1, 0 
+  br i1 %2, label %then, label %else
+then:
+  br label %merge 
+else:
+  %3 = load i32, i32* %0 
+  %4 = sub i32 %3, 1 
+  %5 = call i32 @fact(i32  %4)  
+  %6 = load i32, i32* %0 
+  %7 = mul i32  %5, %6 
+  br label %merge 
+merge:
+  %8 = phi i32 [1, %then], [%7, %else] 
+  ret i32 %8 
+}
+```
+
+# Installation
 
 ## Requirements
 
