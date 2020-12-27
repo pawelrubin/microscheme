@@ -2,8 +2,8 @@ module Main where
 
 import Data.String.Conversions
 import qualified Data.Text.IO as T
-import HaScheme
 import LLVM.Pretty
+import MicroScheme
 import Options.Applicative
 import System.Directory
 import Text.Pretty.Simple

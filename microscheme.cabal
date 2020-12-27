@@ -4,15 +4,15 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 32dca1c5b7efab611b88bf4a4a4eca33e4c882be0e69ff3cb88f847e3a270175
+-- hash: 8621b89fa0bbedf0d27e9cd7ac9b35f0213e222e4794893062cc76916408546c
 
-name:           haschemell
+name:           microscheme
 version:        0.1.0.0
 synopsis:       A little scheme compiler for the LLVM platform written in Haskell.
-description:    Please see the README on GitHub at <https://github.com/pawelrubin/haschemell#readme>
+description:    Please see the README on GitHub at <https://github.com/pawelrubin/microscheme#readme>
 category:       Compilers/Interpreters
-homepage:       https://github.com/pawelrubin/haschemell#readme
-bug-reports:    https://github.com/pawelrubin/haschemell/issues
+homepage:       https://github.com/pawelrubin/microscheme#readme
+bug-reports:    https://github.com/pawelrubin/microscheme/issues
 author:         Paweł Rubin
 maintainer:     pawelrubin19@gmail.com
 copyright:      2020 Paweł Rubin
@@ -25,19 +25,19 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/pawelrubin/haschemell
+  location: https://github.com/pawelrubin/microscheme
 
 library
   exposed-modules:
-      HaScheme
-      HaScheme.Ast
-      HaScheme.CodeGen
-      HaScheme.Eval
-      HaScheme.Parser
-      HaScheme.Primitives
-      HaScheme.TopLevel
+      MicroScheme
+      MicroScheme.Ast
+      MicroScheme.CodeGen
+      MicroScheme.Eval
+      MicroScheme.Parser
+      MicroScheme.Primitives
+      MicroScheme.TopLevel
   other-modules:
-      Paths_haschemell
+      Paths_microscheme
   hs-source-dirs:
       src
   default-extensions: OverloadedStrings LambdaCase
@@ -59,10 +59,10 @@ library
     , unix
   default-language: Haskell2010
 
-executable haschemell
+executable microscheme
   main-is: Main.hs
   other-modules:
-      Paths_haschemell
+      Paths_microscheme
   hs-source-dirs:
       app
   default-extensions: OverloadedStrings LambdaCase
@@ -71,10 +71,10 @@ executable haschemell
       base >=4.7 && <5
     , containers
     , directory
-    , haschemell
     , llvm-hs >=9 && <10
     , llvm-hs-pretty >=0.9 && <1
     , llvm-hs-pure >=9 && <10
+    , microscheme
     , mtl
     , optparse-applicative
     , parsec
@@ -86,11 +86,11 @@ executable haschemell
     , unix
   default-language: Haskell2010
 
-test-suite haschemell-test
+test-suite microscheme-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_haschemell
+      Paths_microscheme
   hs-source-dirs:
       test
   default-extensions: OverloadedStrings LambdaCase
@@ -99,10 +99,10 @@ test-suite haschemell-test
       base >=4.7 && <5
     , containers
     , directory
-    , haschemell
     , llvm-hs >=9 && <10
     , llvm-hs-pretty >=0.9 && <1
     , llvm-hs-pure >=9 && <10
+    , microscheme
     , mtl
     , parsec
     , pretty-simple

@@ -1,10 +1,9 @@
-
 -- |
--- Module      : HaScheme.Ast
+-- Module      : MicroScheme.Ast
 -- Copyright   : Paweł Rubin
 --
 -- This module introduces the AST data type and the SchemeError data type.
-module HaScheme.Ast where
+module MicroScheme.Ast where
 
 import qualified Data.Text as T
 import Text.ParserCombinators.Parsec (ParseError)

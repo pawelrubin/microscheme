@@ -2,11 +2,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
--- Module      : HaScheme.Eval
+-- Module      : MicroScheme.Eval
 -- Copyright   : Paweł Rubin
 --
 -- This module implements syntactic analysis of AST of the Micro Scheme language.
-module HaScheme.Eval where
+module MicroScheme.Eval where
 
 import Control.Monad.Except
   ( ExceptT,
@@ -17,8 +17,8 @@ import Control.Monad.Except
 import Control.Monad.State (State, evalState, gets, modify)
 import qualified Data.Map as M
 import qualified Data.Text as T
-import HaScheme.Ast (SchemeError (..), SchemeVal (..))
-import HaScheme.Primitives (Primitive, primitives)
+import MicroScheme.Ast (SchemeError (..), SchemeVal (..))
+import MicroScheme.Primitives (Primitive, primitives)
 
 data Env = Env
   { variables :: [T.Text],

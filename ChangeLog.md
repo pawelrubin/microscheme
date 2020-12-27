@@ -1,3 +1,3 @@
-# Changelog for haschemell
+# Changelog for microscheme
 
 ## Unreleased changes

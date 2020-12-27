@@ -1,13 +1,13 @@
-name: haschemell
+name: microscheme
 version: 0.1.0.0
-github: "pawelrubin/haschemell"
+github: "pawelrubin/microscheme"
 license: BSD3
 author: "Paweł Rubin"
 maintainer: "pawelrubin19@gmail.com"
 copyright: "2020 Paweł Rubin"
 synopsis: A little scheme compiler for the LLVM platform written in Haskell.
 category: Compilers/Interpreters
-description: Please see the README on GitHub at <https://github.com/pawelrubin/haschemell#readme>
+description: Please see the README on GitHub at <https://github.com/pawelrubin/microscheme#readme>
 extra-source-files:
   - README.md
   - ChangeLog.md
@@ -44,11 +44,11 @@ executable:
   source-dirs: app
   dependencies:
     - optparse-applicative
-    - haschemell
+    - microscheme
 
 tests:
-  haschemell-test:
+  microscheme-test:
     main: Spec.hs
     source-dirs: test
     dependencies:
-      - haschemell
+      - microscheme

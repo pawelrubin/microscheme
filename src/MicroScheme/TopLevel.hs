@@ -1,9 +1,9 @@
 -- |
--- Module      : HaScheme.TopLevel
+-- Module      : MicroScheme.TopLevel
 -- Copyright   : Paweł Rubin
 --
 -- This module introduces an API for LLVM IR generation and compilation using clang.
-module HaScheme.TopLevel where
+module MicroScheme.TopLevel where
 
 import Control.Exception (bracket)
 import Data.String.Conversions (cs)

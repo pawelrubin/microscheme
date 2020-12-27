@@ -7,11 +7,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
--- Module      : HaScheme.Codegen
+-- Module      : MicroScheme.Codegen
 -- Copyright   : Paweł Rubin
 --
 -- This module implements LLVM IR generation of the Micro Scheme language.
-module HaScheme.CodeGen
+module MicroScheme.CodeGen
   ( codegenProgram,
   )
 where
@@ -30,12 +30,6 @@ import qualified Data.Map as M
 import Data.String (fromString)
 import Data.String.Conversions (ConvertibleStrings (..), cs)
 import qualified Data.Text as T
-import HaScheme.Eval
-  ( EvalAst (..),
-  )
-import HaScheme.Primitives
-  ( Primitive (..),
-  )
 import LLVM.AST (Operand)
 import qualified LLVM.AST as AST
 import qualified LLVM.AST.Attribute as Atr
@@ -49,6 +43,12 @@ import qualified LLVM.IRBuilder.Instruction as L
 import qualified LLVM.IRBuilder.Module as L
 import qualified LLVM.IRBuilder.Monad as L
 import LLVM.Prelude (ShortByteString)
+import MicroScheme.Eval
+  ( EvalAst (..),
+  )
+import MicroScheme.Primitives
+  ( Primitive (..),
+  )
 
 newtype GenState = GenState
   { operands :: M.Map T.Text Operand

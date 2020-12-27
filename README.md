@@ -1,4 +1,4 @@
-# haschemell
+# Micro Scheme Compiler
 
 # Install
 
