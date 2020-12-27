@@ -43,6 +43,7 @@ import qualified LLVM.IRBuilder.Instruction as L
 import qualified LLVM.IRBuilder.Module as L
 import qualified LLVM.IRBuilder.Monad as L
 import LLVM.Prelude (ShortByteString)
+import MicroScheme.Common (withFrozenState)
 import MicroScheme.Eval
   ( EvalAst (..),
   )
@@ -69,8 +70,11 @@ registerOperand :: MonadState GenState m => T.Text -> Operand -> m ()
 registerOperand name op =
   modify $ \env -> env {operands = M.insert name op (operands env)}
 
+getOperand :: T.Text -> Codegen Operand
+getOperand name = gets ((M.! name) . operands)
+
 callFunction :: T.Text -> [(Operand, [Atr.ParameterAttribute])] -> Codegen Operand
-callFunction f xs = flip L.call xs =<< gets ((M.! f) . operands)
+callFunction f xs = flip L.call xs =<< getOperand f
 
 partition :: (a -> Bool) -> [a] -> ([a], [a])
 partition p xs = (filter p xs, filter (not . p) xs)
@@ -84,24 +88,13 @@ mkTerminator instr = do
 -- Code generation
 --------------------------------------------
 
-codegenExpr :: EvalAst -> Codegen Operand
-codegenExpr expr = case expr of
-  NumConst num -> pure $ L.int32 num
-  BoolConst b -> pure $ L.bit (if b then 1 else 0)
-  VariableIdentifier id -> flip L.load 0 =<< gets ((M.! id) . operands)
-  PrimitiveCall prim args -> codegenPrimitiveCall prim args
-  VariableSet varName newValue -> codegenVariableSet varName newValue
-  VariableDefinition name value -> codegenVariableDef name value
-  IfCall cond ifTrue ifFalse -> codegenIfExpr cond ifTrue ifFalse
-  FunctionCall name params -> codegenFunCall name params
-  x -> error $ show x
-
+-- | Emit code for function call.
 codegenFunCall :: T.Text -> [EvalAst] -> Codegen Operand
 codegenFunCall fName fParams = do
-  f <- gets ((M.! fName) . operands)
   params <- mapM codegenExpr fParams
-  L.call f (map (,[]) params)
+  callFunction fName (map (,[]) params)
 
+-- | Emit code for conditional expressions.
 codegenIfExpr :: EvalAst -> EvalAst -> EvalAst -> Codegen Operand
 codegenIfExpr c t f = mdo
   cond <- codegenExpr c
@@ -118,6 +111,7 @@ codegenIfExpr c t f = mdo
   mergeBlock <- L.block `L.named` "merge"
   L.phi [(thenValue, thenBlock), (elseValue, elseBlock)]
 
+-- | Emit code for primitives and built-ins calls.
 codegenPrimitiveCall :: Primitive -> [EvalAst] -> Codegen Operand
 codegenPrimitiveCall prim (x : xs) = do
   x <- codegenExpr x
@@ -143,13 +137,15 @@ codegenPrimitiveCall Newline _ = callFunction "newline" []
 codegenPrimitiveCall Read _ = callFunction "read" []
 codegenPrimitiveCall _ [] = error "Primitive function called without arguments"
 
+-- | Emit code for variable assignment.
 codegenVariableSet :: T.Text -> EvalAst -> Codegen Operand
 codegenVariableSet varName newValue = do
-  var <- gets ((M.! varName) . operands)
+  var <- getOperand varName
   val <- codegenExpr newValue
   L.store var 0 val
   return var
 
+-- | Emit code for variable declaration and add it to the symbol table.
 codegenVariableDef :: T.Text -> EvalAst -> Codegen Operand
 codegenVariableDef name value = do
   let _name = mkName $ cs name
@@ -159,13 +155,14 @@ codegenVariableDef name value = do
   registerOperand name var
   return var
 
+-- | Emit code for function declaration and add it to the symbol table.
 codegenFunction :: T.Text -> [T.Text] -> [EvalAst] -> LLVM ()
 codegenFunction fName args body = mdo
   -- Add function to symbol table before generating the function body
   -- in case of a recursive call.
   registerOperand fName function
   let params = map mkParam args
-  function <- L.function name params AST.i32 genBody
+  function <- withFrozenState $ L.function name params AST.i32 genBody
   return ()
   where
     name = mkName (cs fName)
@@ -187,6 +184,20 @@ codegenFunction fName args body = mdo
       -- emit return
       L.ret . last =<< mapM codegenExpr body
 
+-- | Main function for LLVM IR generation for expressions.
+codegenExpr :: EvalAst -> Codegen Operand
+codegenExpr expr = case expr of
+  NumConst num -> pure $ L.int32 num
+  BoolConst b -> pure $ L.bit (if b then 1 else 0)
+  VariableIdentifier id -> flip L.load 0 =<< getOperand id
+  PrimitiveCall prim args -> codegenPrimitiveCall prim args
+  VariableSet varName newValue -> codegenVariableSet varName newValue
+  VariableDefinition name value -> codegenVariableDef name value
+  IfCall cond ifTrue ifFalse -> codegenIfExpr cond ifTrue ifFalse
+  FunctionCall name params -> codegenFunCall name params
+  x -> error $ show x
+
+-- | Emit extern instructions for built-in functions declared in the runtime.c file.
 emitBuiltIns :: LLVM ()
 emitBuiltIns = mapM_ emitBuiltIn builtIns
   where

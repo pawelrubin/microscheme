@@ -11,7 +11,7 @@ primitives =
       ("-", Sub),
       ("*", Mult),
       ("/", Div),
-      ("%", Mod),
+      ("mod", Mod),
       -- boolean
       ("&&", And),
       ("||", Or),

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8621b89fa0bbedf0d27e9cd7ac9b35f0213e222e4794893062cc76916408546c
+-- hash: f9ec3b373b458d63b138f68d03f4104d5f74b75603ef16cd276f82ef743328de
 
 name:           microscheme
 version:        0.1.0.0
@@ -32,6 +32,7 @@ library
       MicroScheme
       MicroScheme.Ast
       MicroScheme.CodeGen
+      MicroScheme.Common
       MicroScheme.Eval
       MicroScheme.Parser
       MicroScheme.Primitives

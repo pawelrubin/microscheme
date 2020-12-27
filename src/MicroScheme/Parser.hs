@@ -96,6 +96,7 @@ schemeVal =
     <|> Number <$> try (sign <*> decimal)
     <|> String <$> textLiteral
     <|> Atom <$> identifier
+    <|> _Quote <$> quoted schemeVal
     <|> List <$> try (parens (schemeVal `sepBy` whitespace))
     <|> do
       _ <- char '('
@@ -103,7 +104,6 @@ schemeVal =
       tail <- char '.' >> whitespace >> schemeVal
       _ <- char ')'
       return (DottedList head tail)
-    <|> _Quote <$> quoted schemeVal
     <|> Nil <$ nil
     <?> "Scheme value"
 

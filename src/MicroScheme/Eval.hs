@@ -18,6 +18,7 @@ import Control.Monad.State (State, evalState, gets, modify)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import MicroScheme.Ast (SchemeError (..), SchemeVal (..))
+import MicroScheme.Common (withFrozenState)
 import MicroScheme.Primitives (Primitive, primitives)
 
 data Env = Env
@@ -68,14 +69,16 @@ setFunction name args body = do
   if name `elem` functions
     then throwError $ FunctionRedefinition name
     else do
-      -- add function to symbol table
       let params = evalFArgs args
       case params of
         Right params -> do
-          variables <- gets variables
-          modify $ \env -> env {functions = name : functions, variables = params ++ variables}
-          evaluatedBody <- mapM eval body
-          return $ FunctionDefinition name params evaluatedBody
+          -- add function to symbol table
+          modify $ \env -> env {functions = name : functions}
+          withFrozenState $ do
+            variables <- gets variables
+            modify $ \env -> env {variables = params ++ variables}
+            evaluatedBody <- mapM eval body
+            return $ FunctionDefinition name params evaluatedBody
         Left err -> throwError err
 
 evalFArgs :: [SchemeVal] -> Either SchemeError [T.Text]
@@ -146,7 +149,7 @@ eval (List atoms) =
           functions <- gets functions
           unless (function `elem` functions) $ throwError $ UnboundFunction function
           return $ FunctionCall function args
-    _ -> undefined
+    v -> error $ show v
 eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
 evalProgram :: [SchemeVal] -> Either SchemeError [EvalAst]
