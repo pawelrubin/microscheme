@@ -45,10 +45,3 @@ executable:
   dependencies:
     - optparse-applicative
     - microscheme
-
-tests:
-  microscheme-test:
-    main: Spec.hs
-    source-dirs: test
-    dependencies:
-      - microscheme

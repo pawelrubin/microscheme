@@ -11,7 +11,7 @@ import Text.Pretty.Simple
 data Action
   = Parse
   | Ast
-  | LLVM
+  | LLVM FilePath
   | Asm FilePath
   | Compile FilePath
   | Run
@@ -23,21 +23,22 @@ data Options = Options
 
 actionP :: Parser Action
 actionP =
-  flag' Parse (long "parse" <> short 'p' <> help "Pretty print the parse tree")
-    <|> flag' Ast (long "ast" <> short 'a' <> help "Pretty print the ast")
-    <|> flag' Asm (long "asm" <> short 's' <> help "Print asm code")
+  flag' Parse (long "parse" <> short 'p' <> help "Print the parse tree")
+    <|> flag' Ast (long "ast" <> short 'a' <> help "Print the ast")
+    <|> flag' Asm (long "asm" <> short 's' <> help "Print asm code to a file")
     <*> strOption (short 'o' <> value "obj.s" <> metavar "FILE")
     <|> flag'
       LLVM
-      (long "llvm" <> short 'l' <> help "Pretty print the generated llvm")
-    <|> flag' Run (long "run" <> short 'r' <> help "Compile and run the code [experimental]")
+      (long "llvm" <> short 'l' <> help "Print the LLVM IR to a file")
+    <*> strOption (short 'o' <> value "llvm.ll" <> metavar "FILE")
+    <|> flag' Run (long "run" <> short 'r' <> help "Compile and run the code")
     <|> pure (Compile "a.out")
 
 optionsP :: Parser Options
 optionsP =
   Options
     <$> actionP
-    <*> strArgument (help "Source file" <> metavar "FILE")
+    <*> strArgument (help "Source file" <> metavar "SRC_FILE")
 
 runOpts :: Options -> IO ()
 runOpts (Options action path) = do
@@ -53,7 +54,7 @@ runOpts (Options action path) = do
               let generatedIR = codegenProgram program
                in case action of
                     Ast -> pPrint program
-                    LLVM -> T.putStrLn . cs . ppllvm $ generatedIR
+                    LLVM path -> writeFile path $ cs . ppllvm $ generatedIR
                     Asm path -> asm generatedIR path
                     Compile path -> compile generatedIR path
                     Run -> run generatedIR >>= T.putStr
@@ -65,6 +66,6 @@ runOpts (Options action path) = do
       errorWithoutStackTrace "File does not exist"
 
 main :: IO ()
-main = runOpts =<< execParser (withInfo optionsP "Micro Scheme compiler")
+main = runOpts =<< execParser (withInfo optionsP "Micro Scheme programming language compiler.")
   where
     withInfo opts desc = info (helper <*> opts) $ progDesc desc

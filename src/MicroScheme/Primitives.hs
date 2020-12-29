@@ -1,3 +1,8 @@
+-- |
+-- Module      : MicroScheme.Primitives
+-- Copyright   : Paweł Rubin
+--
+-- This module declarations of primitive and built-in functions.
 module MicroScheme.Primitives where
 
 import qualified Data.Map as M
@@ -21,10 +26,6 @@ primitives =
       ("<=", Le),
       ("=", Eq),
       ("/=", Ne),
-      -- list
-      ("cons", Cons),
-      -- functional
-      ("apply", Apply),
       -- io
       ("display", Display),
       ("newline", Newline),
@@ -47,10 +48,6 @@ data Primitive
   | Le
   | Eq
   | Ne
-  | -- list
-    Cons
-  | -- functional
-    Apply
   | -- io
     Display
   | Newline

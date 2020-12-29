@@ -1,3 +1,8 @@
+-- |
+-- Module      : MicroScheme.Common
+-- Copyright   : Paweł Rubin
+--
+-- This module contains common functions used by different modules.
 module MicroScheme.Common where
 
 import Control.Monad.State (MonadState (get, put))

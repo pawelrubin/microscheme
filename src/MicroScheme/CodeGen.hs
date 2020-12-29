@@ -1,9 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
--- To create ConvertibleStrings instance for ShortByteString
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE TupleSections #-}
+-- To create ConvertibleStrings instance for ShortByteString
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- |
@@ -188,7 +187,6 @@ codegenFunction fName args body = mdo
 codegenExpr :: EvalAst -> Codegen Operand
 codegenExpr expr = case expr of
   NumConst num -> pure $ L.int32 num
-  BoolConst b -> pure $ L.bit (if b then 1 else 0)
   VariableIdentifier id -> flip L.load 0 =<< getOperand id
   PrimitiveCall prim args -> codegenPrimitiveCall prim args
   VariableSet varName newValue -> codegenVariableSet varName newValue

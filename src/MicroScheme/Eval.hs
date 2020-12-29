@@ -1,11 +1,8 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
 -- |
 -- Module      : MicroScheme.Eval
 -- Copyright   : Paweł Rubin
 --
--- This module implements syntactic analysis of AST of the Micro Scheme language.
+-- This module implements semantic analysis of AST of the Micro Scheme language.
 module MicroScheme.Eval where
 
 import Control.Monad.Except
@@ -23,38 +20,21 @@ import MicroScheme.Primitives (Primitive, primitives)
 
 data Env = Env
   { variables :: [T.Text],
-    functions :: [T.Text] -- Add more data to function table
+    functions :: [T.Text]
   }
 
 type EvalState = ExceptT SchemeError (State Env)
 
 data EvalAst
-  = Var T.Text
-  | NumConst Integer
-  | BoolConst Bool
-  | StrConst T.Text
+  = NumConst Integer
   | VariableIdentifier T.Text
   | VariableSet T.Text EvalAst
   | VariableDefinition T.Text EvalAst
   | FunctionDefinition T.Text [T.Text] [EvalAst]
-  | Lambda [T.Text] [EvalAst]
-  | FunctionArg T.Text
   | PrimitiveCall Primitive [EvalAst]
   | FunctionCall T.Text [EvalAst]
   | IfCall EvalAst EvalAst EvalAst
-  | EList [EvalAst]
   deriving (Show)
-
-makeLambda :: [SchemeVal] -> [SchemeVal] -> EvalState EvalAst
-makeLambda args body = do
-  variables <- gets variables
-  let params = evalFArgs args
-  case params of
-    Right params -> do
-      modify $ \env -> env {variables = variables ++ params}
-      body <- mapM eval body
-      return $ Lambda params body
-    Left err -> throwError err
 
 getFunction :: T.Text -> [EvalAst] -> EvalState EvalAst
 getFunction name params = do
@@ -87,7 +67,7 @@ evalFArgs args = case args of
   (Atom arg1 : rest) -> do
     rest <- evalFArgs rest
     return $ arg1 : rest
-  (_ : _) -> throwError $ Default "Invalid function call: Invalid arguments"
+  (_ : _) -> throwError $ Default "Invalid function definition: Invalid arguments"
 
 getVar :: T.Text -> EvalState EvalAst
 getVar var = do
@@ -120,11 +100,7 @@ evalList :: [SchemeVal] -> EvalState [EvalAst]
 evalList = mapM eval
 
 eval :: SchemeVal -> EvalState EvalAst
--- literals
 eval (Number num) = pure (NumConst num)
-eval (Bool bool) = pure (BoolConst bool)
-eval (String str) = pure (StrConst str)
--- variables
 eval (Atom id) = getVar id
 eval (List atoms) =
   case atoms of
@@ -138,7 +114,6 @@ eval (List atoms) =
     [Atom "define", Atom name, value] -> defineVar name value
     (Atom "define" : List (Atom name : params) : body) -> setFunction name params body
     (Atom "define" : _) -> throwError $ Default "Illegal define."
-    (Atom "lambda" : List params : body) -> makeLambda params body
     (Atom function : args) -> do
       -- first check for primitive function
       let prim = M.lookup function primitives
@@ -150,7 +125,6 @@ eval (List atoms) =
           unless (function `elem` functions) $ throwError $ UnboundFunction function
           return $ FunctionCall function args
     v -> error $ show v
-eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
 evalProgram :: [SchemeVal] -> Either SchemeError [EvalAst]
 evalProgram program = evalState (runExceptT (evalList program)) baseEnv

@@ -5,11 +5,7 @@
 -- Copyright   : Paweł Rubin
 --
 -- This module implements parsing of the Micro Scheme language.
-module MicroScheme.Parser
-  ( readExpr,
-    readExprFile,
-  )
-where
+module MicroScheme.Parser (readExprFile) where
 
 import Control.Monad (mzero)
 import Data.Functor (($>))
@@ -21,13 +17,11 @@ import Text.Parsec
     SourceName,
     char,
     digit,
-    endBy,
     eof,
     letter,
     oneOf,
     parse,
     sepBy,
-    string,
     try,
     (<?>),
     (<|>),
@@ -63,67 +57,29 @@ parens = Tok.parens lexer
 whitespace :: Parser ()
 whitespace = Tok.whiteSpace lexer
 
-lexeme :: Parser a -> Parser a
-lexeme = Tok.lexeme lexer
-
 decimal :: Parser Integer
 decimal = Tok.decimal lexer
 
 sign :: Parser (Integer -> Integer)
 sign =
   (char '-' $> negate)
-    <|> (char '+' $> id)
     <|> return id
 
-textLiteral :: Parser T.Text
-textLiteral = T.pack <$> Tok.stringLiteral lexer
+atomP :: Parser SchemeVal
+atomP = Atom . T.pack <$> Tok.identifier lexer <?> "identifier"
 
-identifier :: Parser T.Text
-identifier = T.pack <$> (Tok.identifier lexer <|> specialIdentifier) <?> "identifier"
-  where
-    specialIdentifier :: Parser String
-    specialIdentifier =
-      lexeme $
-        try $
-          string "-" <|> string "+" <|> string "..."
+listP :: Parser SchemeVal
+listP = List <$> try (parens (schemeVal `sepBy` whitespace)) <?> "list"
 
-nil :: Parser ()
-nil = try (char '\'') *> string "()" *> return () <?> "nil"
+numberP :: Parser SchemeVal
+numberP = Number <$> try (sign <*> decimal) <?> "number"
 
 schemeVal :: Parser SchemeVal
 schemeVal =
-  hashVal
-    <|> Number <$> try (sign <*> decimal)
-    <|> String <$> textLiteral
-    <|> Atom <$> identifier
-    <|> _Quote <$> quoted schemeVal
-    <|> List <$> try (parens (schemeVal `sepBy` whitespace))
-    <|> do
-      _ <- char '('
-      head <- endBy schemeVal whitespace
-      tail <- char '.' >> whitespace >> schemeVal
-      _ <- char ')'
-      return (DottedList head tail)
-    <|> Nil <$ nil
+  numberP
+    <|> atomP
+    <|> listP
     <?> "Scheme value"
-
-_Quote :: SchemeVal -> SchemeVal
-_Quote val = List [Atom "quote", val]
-
-quoted :: Parser a -> Parser a
-quoted p = try (char '\'') *> p
-
-hashVal :: Parser SchemeVal
-hashVal =
-  lexeme $
-    char '#'
-      *> ( (char 't' $> Bool True)
-             <|> (char 'f' $> Bool False)
-             <|> oneOf "bodxer(\\" *> fail "Unsupported"
-         )
-
-readExpr :: T.Text -> Either ParseError SchemeVal
-readExpr = parse (whitespace *> lexeme schemeVal <* eof) "<stdin>"
 
 readExprFile :: SourceName -> T.Text -> Either ParseError [SchemeVal]
 readExprFile = parse (whitespace *> (schemeVal `sepBy` whitespace) <* eof)
