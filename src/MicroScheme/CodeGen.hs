@@ -203,8 +203,8 @@ emitBuiltIns = mapM_ emitBuiltIn builtIns
       f <- L.extern (mkName $ cs name) paramsTypes returnType
       registerOperand name f
     builtIns =
-      [ ("display", [AST.i32], AST.void),
-        ("newline", [], AST.void),
+      [ ("display", [AST.i32], AST.i32),
+        ("newline", [], AST.i32),
         ("read", [], AST.i32)
       ]
 

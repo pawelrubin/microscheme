@@ -25,11 +25,11 @@ actionP :: Parser Action
 actionP =
   flag' Parse (long "parse" <> short 'p' <> help "Print the parse tree")
     <|> flag' Ast (long "ast" <> short 'a' <> help "Print the ast")
-    <|> flag' Asm (long "asm" <> short 's' <> help "Print asm code to a file")
+    <|> flag' Asm (long "asm" <> short 's' <> help "Write the asm code to a file")
     <*> strOption (short 'o' <> value "obj.s" <> metavar "FILE")
     <|> flag'
       LLVM
-      (long "llvm" <> short 'l' <> help "Print the LLVM IR to a file")
+      (long "llvm" <> short 'l' <> help "Write the LLVM IR code to a file")
     <*> strOption (short 'o' <> value "llvm.ll" <> metavar "FILE")
     <|> flag' Run (long "run" <> short 'r' <> help "Compile and run the code")
     <|> pure (Compile "a.out")

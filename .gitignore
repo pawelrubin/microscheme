@@ -12,3 +12,6 @@
 
 # llvm
 *.ll
+
+# testing
+test.scm

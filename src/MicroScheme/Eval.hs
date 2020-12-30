@@ -96,6 +96,25 @@ defineVar var val = do
       value <- eval val
       return $ VariableDefinition var value
 
+functionCall :: T.Text -> [SchemeVal] -> EvalState EvalAst
+functionCall function args = do
+  -- first check for primitive function
+  let prim = M.lookup function primitives
+  args <- evalList args
+  case prim of
+    Just prim -> return $ PrimitiveCall prim args
+    Nothing -> do
+      functions <- gets functions
+      unless (function `elem` functions) $ throwError $ UnboundFunction function
+      return $ FunctionCall function args
+
+ifCall :: SchemeVal -> SchemeVal -> SchemeVal -> EvalState EvalAst
+ifCall cond ifTrue ifFalse = do
+  _cond <- eval cond
+  _ifTrue <- eval ifTrue
+  _ifFalse <- eval ifFalse
+  return $ IfCall _cond _ifTrue _ifFalse
+
 evalList :: [SchemeVal] -> EvalState [EvalAst]
 evalList = mapM eval
 
@@ -104,26 +123,12 @@ eval (Number num) = pure (NumConst num)
 eval (Atom id) = getVar id
 eval (List atoms) =
   case atoms of
-    [Atom "quote", val] -> eval val
-    [Atom "if", cond, ifTrue, ifFalse] -> do
-      _cond <- eval cond
-      _ifTrue <- eval ifTrue
-      _ifFalse <- eval ifFalse
-      return $ IfCall _cond _ifTrue _ifFalse
-    [Atom "set!", Atom name, value] -> setVar name value
     [Atom "define", Atom name, value] -> defineVar name value
     (Atom "define" : List (Atom name : params) : body) -> setFunction name params body
     (Atom "define" : _) -> throwError $ Default "Illegal define."
-    (Atom function : args) -> do
-      -- first check for primitive function
-      let prim = M.lookup function primitives
-      args <- evalList args
-      case prim of
-        Just prim -> return $ PrimitiveCall prim args
-        Nothing -> do
-          functions <- gets functions
-          unless (function `elem` functions) $ throwError $ UnboundFunction function
-          return $ FunctionCall function args
+    [Atom "set!", Atom name, value] -> setVar name value
+    [Atom "if", cond, ifTrue, ifFalse] -> ifCall cond ifTrue ifFalse
+    (Atom function : args) -> functionCall function args
     v -> error $ show v
 
 evalProgram :: [SchemeVal] -> Either SchemeError [EvalAst]

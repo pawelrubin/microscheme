@@ -1,9 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void display(int x) { printf("%d", x); }
+int display(int x) {
+  printf("%d", x);
+  return x;
+}
 
-void newline() { printf("\n"); }
+int newline() {
+  printf("\n");
+  return 0;
+}
 
 int read() {
   int x = -1;
