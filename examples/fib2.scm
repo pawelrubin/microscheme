@@ -4,5 +4,6 @@
         1
         (+ (fib (- n 1)) (fib (- n 2)))))
 
-(display (fib 10))
+(define n (read))
+(display (fib n))
 (newline)
