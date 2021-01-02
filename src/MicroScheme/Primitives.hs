@@ -8,6 +8,7 @@ module MicroScheme.Primitives where
 import qualified Data.Map as M
 import qualified Data.Text as T
 
+-- | Primitive and built-in functions.
 primitives :: M.Map T.Text Primitive
 primitives =
   M.fromList

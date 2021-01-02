@@ -19,6 +19,7 @@ import System.IO (hClose)
 import System.Posix.Temp (mkdtemp, mkstemps)
 import System.Process (callProcess, readProcess)
 
+-- | Writes LLVM IR code into a file.
 asm :: Module -> FilePath -> IO ()
 asm llvmModule outFile =
   bracket (mkdtemp "build") removePathForcibly $ \buildDir ->
@@ -28,6 +29,7 @@ asm llvmModule outFile =
       hClose llvmHandle
       callProcess "llc-9" [llvm, "-o", "../" <> outFile]
 
+-- | Compiles Micro Scheme code.
 compile :: Module -> FilePath -> IO ()
 compile llvmModule outFile =
   bracket (mkdtemp "build") removePathForcibly $ \buildDir ->
@@ -43,6 +45,7 @@ compile llvmModule outFile =
         "clang"
         ["-Wno-override-module", "-lm", llvm, runtime, "-o", "../" <> outFile]
 
+-- | Compiles and runs Micro Scheme code.
 run :: Module -> IO Text
 run llvmModule = do
   compile llvmModule "./a.out"

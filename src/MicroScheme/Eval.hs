@@ -3,7 +3,7 @@
 -- Copyright   : Paweł Rubin
 --
 -- This module implements semantic analysis of AST of the Micro Scheme language.
-module MicroScheme.Eval where
+module MicroScheme.Eval (evalProgram, EvalAst (..)) where
 
 import Control.Monad.Except
   ( ExceptT,
@@ -35,13 +35,6 @@ data EvalAst
   | FunctionCall T.Text [EvalAst]
   | IfCall EvalAst EvalAst EvalAst
   deriving (Show)
-
-getFunction :: T.Text -> [EvalAst] -> EvalState EvalAst
-getFunction name params = do
-  functions <- gets functions
-  if name `elem` functions
-    then return $ FunctionCall name params
-    else throwError $ UnboundFunction name
 
 setFunction :: T.Text -> [SchemeVal] -> [SchemeVal] -> EvalState EvalAst
 setFunction name args body = do
@@ -131,6 +124,7 @@ eval (List atoms) =
     (Atom function : args) -> functionCall function args
     v -> error $ show v
 
+-- | Traverses the simple parse tree and produces more meaningful AST.
 evalProgram :: [SchemeVal] -> Either SchemeError [EvalAst]
 evalProgram program = evalState (runExceptT (evalList program)) baseEnv
   where

@@ -81,5 +81,6 @@ schemeVal =
     <|> listP
     <?> "Scheme value"
 
+-- | Main parser function.
 readExprFile :: SourceName -> T.Text -> Either ParseError [SchemeVal]
 readExprFile = parse (whitespace *> (schemeVal `sepBy` whitespace) <* eof)
